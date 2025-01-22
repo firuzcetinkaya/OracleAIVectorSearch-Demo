@@ -1,0 +1,5 @@
+- embedding repository is missing
+- build docker image
+- create vector from oracle table
+- ceate vector from directory (first create one and then add_docs to utilize)
+- similarity-search-with-relevance has not been implemented yet throwing exception
