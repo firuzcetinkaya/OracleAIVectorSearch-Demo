@@ -1,9 +1,14 @@
 import streamlit as st
+from pathlib import Path
 
 st.set_page_config(
     page_title="Oracle23ai Vector Search ",
     page_icon=":o2:",
 )
+# check whether the app is running inside a container or not
+def is_docker():
+    cgroup = Path('/proc/self/cgroup')
+    return Path('/.dockerenv').is_file() or cgroup.is_file() and 'docker' in cgroup.read_text()
 
 try:
     pages = {
@@ -24,6 +29,17 @@ try:
     }
     pg = st.navigation(pages)
     pg.run()
-
+    
+    if is_docker():
+        if 'is_docker' not in st.session_state:
+            st.session_state['is_docker'] = "True"
+        else:
+            st.session_state['is_docker'] = "True"
+    else:
+        if 'is_docker' not in st.session_state:
+            st.session_state['is_docker'] = "False"
+        else:
+            st.session_state['is_docker'] = "False"
+    
 except Exception as e:
     st.warning(f"An error occurred: {e}")

@@ -3,8 +3,8 @@ import utils.db_connection as db
 import streamlit as st
 import subprocess
 import utils.sql_api as sql_api
-from pathlib import Path
-    
+
+
 class ModelLoader:
     """
     A class that implements three different methods for loading an external embedding model to Oracle Database.
@@ -26,19 +26,15 @@ class ModelLoader:
             return True
 
 
-    def is_docker():
-        cgroup = Path('/proc/self/cgroup')
-        return Path('/.dockerenv').is_file() or cgroup.is_file() and 'docker' in cgroup.read_text()
-    
     def copy_onnx_to_db_host(self, onnx_file):
         # First copy file to DEMO_PY_DIR to load
         # if this is not a docker env. we need to upload the onnx file to docker instance first, copy file operation varies on different platforms
         #command="docker cp "+"./Data/onnx_files/"+onnx_file+" vector-db:"+st.session_state.onnx_directory+"/"+onnx_file        
         #command="cp"+"./Data/onnx_files/"+onnx_file+" "+st.session_state.onnx_directory+"/"+onnx_file
-        if self.is_docker():
-            command="docker cp "+"./Data/onnx_files/"+onnx_file+" vector-db:/home/oracle/"+onnx_file    
+        if (st.session_state['is_docker']=="True"):
+            command="cp "+"./Data/onnx_files/"+onnx_file+" /tmp/oracle_volume/"+onnx_file    
         else:        
-            command="docker cp "+"./Data/onnx_files/"+onnx_file+" vector-db:/home/oracle/"+onnx_file    
+            command="docker cp "+"./Data/onnx_files/"+onnx_file+" vector-db:/tmp/oracle_volume/"+onnx_file    
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
         process.wait()
         if (process.returncode==0):

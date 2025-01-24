@@ -73,15 +73,11 @@ def rag_search (question):
     prompt = prompt_template.format(context=doc_texts, question=question)    
     return prompt
 
-from pathlib import Path
 
-def is_docker():
-    cgroup = Path('/proc/self/cgroup')
-    return Path('/.dockerenv').is_file() or cgroup.is_file() and 'docker' in cgroup.read_text()
 
 def generate_text_with_ollama(input_sentence, chat_history,llm_model):
     #if ollama is in a separate docker or in docker host
-    if is_docker():    
+    if (st.session_state['is_docker']=="True"):    
         olc = ollama.Client().Client("http://host.docker.internal:11434")
         stream = olc.chat(
         model=llm_model,

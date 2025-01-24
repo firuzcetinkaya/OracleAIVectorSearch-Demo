@@ -1,7 +1,7 @@
 # PowerShell script to check Docker installation and pull Oracle image
 
 $CR = "container-registry.oracle.com"
-$DB_HOST_NAME = "VECTOR_DB"
+$DB_HOST_NAME = "vector-db"
 $DB_PORT = 1521
 $ORACLE_PASSWD = "Oracle123"
 $DB_EXPOSE_PORT = 1529

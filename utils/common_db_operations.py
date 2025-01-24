@@ -151,7 +151,7 @@ def configure_vector_user():
                     -- Create user and grant privileges
                     execute immediate 'create user VECTOR_USER identified by Oracle123';
                     execute immediate 'grant connect, unlimited tablespace, create credential, create any table, create procedure, create any index to VECTOR_USER';
-                    execute immediate 'create or replace directory DEMO_PY_DIR as ''/home/oracle''';
+                    execute immediate 'create or replace directory DEMO_PY_DIR as ''/tmp/oracle_volume''';
                     execute immediate 'grant read, write on directory DEMO_PY_DIR to public';
                     execute immediate 'grant create mining model to VECTOR_USER';
                     
