@@ -6,14 +6,7 @@ from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 import pandas as pd
 #defne 5d
-st.write("##### Oradefnecle 23ai Similarity Search (Semantic Search) ")
-api=st.radio(
-            " ",
-            ["Langchain", "SQL","LlamaIndex"],
-            captions=["Langchain API","SQL API","LlamaIndex API"],
-            horizontal=True,
-            index=0
-            )
+st.write("##### Similarity Search (Semantic Search) ")
 
 def get_selected_distance():
     if (selected_distance_method):

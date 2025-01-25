@@ -8,7 +8,7 @@
 
 CR="container-registry.oracle.com"
 DOCKER_VOLUME_NAME="ora_volume"
-DEMO_IP="172.11.0.3"
+DOCKER_VOLUME_PATH="/tmp/oracle_volume"
 DOCKER_NETWORK_NAME="ora_net"
 NETWORK_SUBNET="172.11.0.0/24"
 NETWORK_IP_RANGE="172.11.0.0/24"
@@ -18,6 +18,8 @@ DB_IP="172.11.0.2"
 DB_PORT=1521
 ORACLE_PASSWD="Oracle123"
 DB_EXPOSE_PORT=1529
+DEMO_CONTAINER_NAME="oracle-ai-vector-search-demo"
+DEMO_IP="172.11.0.3"
 
 echo "Checking Docker installation"
 if command -v docker &> /dev/null; then
@@ -32,10 +34,10 @@ echo "Please login to "${CR}" with your Oracle SSO Credentials before proceeding
 docker login "${CR}"
 
 echo "Pulling Oracle 23ai Image from Oracle Container Registry"
-if [ "$(docker images -q container-registry.oracle.com/database/free:latest 2> /dev/null)" ]; then
-    echo "container-registry.oracle.com/database/free:latest already exists..."
+if [ "$(docker images -q container-registry.oracle.com/database/free:23.6.0.0 2> /dev/null)" ]; then
+    echo "container-registry.oracle.com/database/free:23.6.0.0 already exists..."
 else
-    docker pull container-registry.oracle.com/database/free:latest
+    docker pull container-registry.oracle.com/database/free:23.6.0.0
 fi
 
 echo "Creating Docker Network ""${DOCKER_NETWORK_NAME}"""
@@ -70,10 +72,11 @@ if [ "$(docker ps -a -q -f name=${DB_HOST_NAME})" ]; then
     echo "Docker Image ${DB_HOST_NAME} ia already up and running!"
 else
     # run your container
-    docker run -td --name ${DB_HOST_NAME} --hostname ${DB_HOST_NAME} --network ${DOCKER_NETWORK_NAME} --ip ${DB_IP} -p ${DB_EXPOSE_PORT}:${DB_PORT} -e ORACLE_PWD=${ORACLE_PASSWD} container-registry.oracle.com/database/free:latest
+    docker run -td --name ${DB_HOST_NAME} --hostname ${DB_HOST_NAME} --network ${DOCKER_NETWORK_NAME} --ip ${DB_IP} -v ${DOCKER_VOLUME_NAME}:${DOCKER_VOLUME_PATH} -p ${DB_EXPOSE_PORT}:${DB_PORT} -e ORACLE_PWD=${ORACLE_PASSWD} container-registry.oracle.com/database/free:23.6.0.0
     until [ $(docker logs ${DB_HOST_NAME}|grep "DATABASE IS READY TO USE"|wc -l) -gt 0 ]; do
       sleep 1
     done
+    docker exec -u 0:0 vector-db chown -R oracle:oinstall /tmp/oracle_volume
     echo "DATABASE IS READY TO USE!"
 fi
 
@@ -87,7 +90,20 @@ else
 fi
 
 echo "Running oracle-ai-vector-search-demo Image"
-docker run -td --name oracle-ai-vector-search-demo --network ${DOCKER_NETWORK_NAME} --ip ${DEMO_IP} -p 8501:8501 ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest
+if [ "$(docker ps -a -q -f name=${DEMO_CONTAINER_NAME})" ]; then
+    if [ "$(docker ps -aq -f status=exited -f name=${DEMO_CONTAINER_NAME})" ]; then
+        # cleanup
+        docker start ${DEMO_CONTAINER_NAME}
+    fi
+    echo "Docker Image ${DEMO_CONTAINER_NAME} ia already up and running!"
+else
+    # run your container
+    docker run -td --name ${DEMO_CONTAINER_NAME} --network ${DOCKER_NETWORK_NAME} --ip ${DEMO_IP} -v ${DOCKER_VOLUME_NAME}:${DOCKER_VOLUME_PATH} -p 8501:8501 ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest
+    #no need this here, works as root
+    #docker exec -u 0:0 ${DEMO_CONTAINER_NAME} chown -R oracle:oinstall /tmp/oracle_volume
+    echo "DATABASE IS READY TO USE!"
+fi
+
 
 echo "Checking Ollama installation"
 if command -v ollama &> /dev/null; then
@@ -106,8 +122,15 @@ else
     fi
 fi
 
-ollama serve &
-# get llama3.2 and run
-ollama run llama3.2 &
+if pgrep -x "ollama" > /dev/null
+then
+    echo "Ollama is Running"
+else
+    ollama serve &
+    # get llama3.2 and run
+    ollama run llama3.2 &
+fi
+
+
 
 echo "Everything is ready, open your web browser, copy and paste the link http://localhost:8501"
