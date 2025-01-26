@@ -15,7 +15,6 @@ def save_configuration_changes():
     st.session_state.port=PORT
     st.session_state.service_name=SERVICE_NAME
     st.session_state.db_expose_port=DB_EXPOSE_PORT
-    st.session_state.onnx_directory=ONNX_DIRECTORY
     st.session_state.llm=LLM
     env.write_env_file()
 

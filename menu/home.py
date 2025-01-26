@@ -15,7 +15,7 @@ st.subheader("",divider="red")
 
 def main():
     env.read_env_file()
-    if (st.session_state.host=="True"):
+    if (st.session_state.is_docker == "True"):
         st.session_state['host'] = "host.docker.internal"
         env.write_env_file()
     else:
