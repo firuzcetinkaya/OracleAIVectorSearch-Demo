@@ -28,4 +28,4 @@ try:
     main()
 except Exception as e:
     st.warning(f"An error occurred: {e}")
-    st.write("Please check Installation and Configuration Pages for more details...")
+    st.write("Please check App Settings for more details...")

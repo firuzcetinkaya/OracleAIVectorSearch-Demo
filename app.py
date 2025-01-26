@@ -15,6 +15,8 @@ def check_runnning_env():
     else:
         st.session_state['is_docker'] = "False"
 
+    check_runnning_env()
+
 try:
     pages = {
         "":[st.Page("menu/home.py", title="Home Page"),
@@ -29,7 +31,6 @@ try:
     pg = st.navigation(pages)
     pg.run()
     
-    check_runnning_env()
     
     
 except Exception as e:

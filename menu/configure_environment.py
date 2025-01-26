@@ -1,8 +1,6 @@
 import streamlit as st
 import ollama 
 import utils.env_file as env
-import utils.common_db_operations as db_ops
-import utils.db_connection as db 
 
 # Functions
 
@@ -15,20 +13,7 @@ def save_configuration_changes():
     st.session_state.port=PORT
     st.session_state.service_name=SERVICE_NAME
     st.session_state.db_expose_port=DB_EXPOSE_PORT
-    st.session_state.llm=LLM
     env.write_env_file()
-
-def configure_db():
-    if st.session_state.conn_sys.is_healthy():
-        print("Sys Connection is ok ")
-        st.write("Vector-db is up & running")
-        st.write("Starting Config")
-        if db_ops.configure_demo_user():
-            st.write("DB Config is complete")
-            st.info("DB is ready to be used")
-    else:
-        db.init_db_connections()
-        st.warning("Please Check Oracle Database 23ai Container!!!")
 
 def configure_llm(ollama):
     try:         
@@ -78,9 +63,9 @@ with tab1:
         save_configuration_changes()  
 with tab2:
     LLM=""
-    if (st.session_state.host=="host.docker.internal"):
+    if (st.session_state.is_docker=="True"):
         ollama = ollama.Client("host.docker.internal")
-    elif (st.session_state.host=="localhost"):
+    else:
         ollama = ollama.Client("localhost")
     configure_llm(ollama)          
 st.stop()
