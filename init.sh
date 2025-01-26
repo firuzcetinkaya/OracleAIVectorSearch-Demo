@@ -6,20 +6,21 @@
 #
 # 
 
+#to exit the script immediately when any command in the flow fails.
+set -euo pipefail
+
 CR="container-registry.oracle.com"
+DB_IMAGE="container-registry.oracle.com/database/free:23.6.0.0"
+DEMO_IMAGE="ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest"
+DB_HOST_NAME="vector-db"
+DB_PORT=1521
+DB_EXPOSE_PORT=1529
+ORACLE_PASSWD="Oracle123"
+DB_CONTAINER_NAME="vector-db"
+DEMO_CONTAINER_NAME="OracleAI-VS-Demo"
 DOCKER_VOLUME_NAME="ora_volume"
 DOCKER_VOLUME_PATH="/tmp/oracle_volume"
-DOCKER_NETWORK_NAME="ora_net"
-NETWORK_SUBNET="172.11.0.0/24"
-NETWORK_IP_RANGE="172.11.0.0/24"
-NETWORK_GATEWAY="172.11.0.1"
-DB_HOST_NAME="vector-db"
-DB_IP="172.11.0.2"
-DB_PORT=1521
-ORACLE_PASSWD="Oracle123"
-DB_EXPOSE_PORT=1529
-DEMO_CONTAINER_NAME="oracle-ai-vector-search-demo"
-DEMO_IP="172.11.0.3"
+LLM="llama3.2"
 
 echo "Checking Docker installation"
 if command -v docker &> /dev/null; then
@@ -33,23 +34,14 @@ fi
 echo "Please login to "${CR}" with your Oracle SSO Credentials before proceeding"
 docker login "${CR}"
 
+
 echo "Pulling Oracle 23ai Image from Oracle Container Registry"
-if [ "$(docker images -q container-registry.oracle.com/database/free:23.6.0.0 2> /dev/null)" ]; then
-    echo "container-registry.oracle.com/database/free:23.6.0.0 already exists..."
+if [ "$(docker images -q ${DB_IMAGE} 2> /dev/null)" ]; then
+    echo "${DB_IMAGE} already exists..."
 else
-    docker pull container-registry.oracle.com/database/free:23.6.0.0
+    docker pull ${DB_IMAGE}
 fi
 
-echo "Creating Docker Network ""${DOCKER_NETWORK_NAME}"""
-if [ $(docker network ls|grep ${DOCKER_NETWORK_NAME}|wc -l) -gt 0 ]; then
-    docker network ls|grep ${DOCKER_NETWORK_NAME}
-    echo "${DOCKER_NETWORK_NAME} already exists..."
-elif [ $(docker network ls|grep ${DOCKER_NETWORK_NAME}|wc -l) -eq 0 ]; then
-    docker network create --driver=bridge --subnet=${NETWORK_SUBNET} --ip-range=${NETWORK_IP_RANGE} --gateway=${NETWORK_GATEWAY} ${DOCKER_NETWORK_NAME}
-else
-    echo "Docker network "${DOCKER_NETWORK_NAME}" couldn't created. Please tyr again."
-    exit 1
-fi
 
 echo "Creating Docker Volume ""${DOCKER_VOLUME_NAME}"""
 if [ $(docker volume ls|grep ${DOCKER_VOLUME_NAME}|wc -l) -gt 0 ]; then
@@ -62,43 +54,42 @@ else
     exit 1
 fi
 
-echo "Running Oracle 23ai Free Docker Image with configured parameters"
 
-if [ "$(docker ps -a -q -f name=${DB_HOST_NAME})" ]; then
-    if [ "$(docker ps -aq -f status=exited -f name=${DB_HOST_NAME})" ]; then
-        # cleanup
-        docker start ${DB_HOST_NAME}
+echo "Running Oracle 23ai Image"
+if [ "$(docker ps -q -a -f name=${DB_CONTAINER_NAME})" ]; then
+    if [ "$(docker ps -aq -f status=exited -f name=${DB_CONTAINER_NAME})" ]; then
+        docker start ${DB_CONTAINER_NAME}
     fi
-    echo "Docker Image ${DB_HOST_NAME} ia already up and running!"
+    echo "Docker Image ${DB_CONTAINER_NAME} is already running!"
 else
     # run your container
-    docker run -td --name ${DB_HOST_NAME} --hostname ${DB_HOST_NAME} --network ${DOCKER_NETWORK_NAME} --ip ${DB_IP} -v ${DOCKER_VOLUME_NAME}:${DOCKER_VOLUME_PATH} -p ${DB_EXPOSE_PORT}:${DB_PORT} -e ORACLE_PWD=${ORACLE_PASSWD} container-registry.oracle.com/database/free:23.6.0.0
-    until [ $(docker logs ${DB_HOST_NAME}|grep "DATABASE IS READY TO USE"|wc -l) -gt 0 ]; do
+    docker run -td --name ${DB_CONTAINER_NAME} --hostname ${DB_HOST_NAME} -v ${DOCKER_VOLUME_NAME}:${DOCKER_VOLUME_PATH} -p ${DB_EXPOSE_PORT}:${DB_PORT} -e ORACLE_PWD=${ORACLE_PASSWD} ${DB_IMAGE}
+    until [ $(docker logs ${DB_CONTAINER_NAME}|grep "DATABASE IS READY TO USE"|wc -l) -gt 0 ]; do
       sleep 1
     done
-    docker exec -u 0:0 vector-db chown -R oracle:oinstall /tmp/oracle_volume
+    docker exec -u 0:0 ${DB_CONTAINER_NAME} chown -R oracle:oinstall /tmp/oracle_volume
     echo "DATABASE IS READY TO USE!"
 fi
 
-# Assuming oracle23ai is up and running on Docker with the name vector-db
 
-echo "Pulling oracle-ai-vector-search-demo Image from GHCR Registry"
-if [ "$(docker images -q ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest 2> /dev/null)" ]; then
-    echo "ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest already exists..."
+echo "Pulling Oracle AI VS Demo Image from GHCR"
+if [ "$(docker images -q ${DEMO_IMAGE} 2> /dev/null)" ]; then
+    echo "${DEMO_IMAGE} already exists..."
 else
-    docker pull ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest
+    docker pull ${DEMO_IMAGE}
 fi
 
-echo "Running oracle-ai-vector-search-demo Image"
+
+echo "Running Oracle AI VS Demo Image"
 if [ "$(docker ps -a -q -f name=${DEMO_CONTAINER_NAME})" ]; then
     if [ "$(docker ps -aq -f status=exited -f name=${DEMO_CONTAINER_NAME})" ]; then
         # cleanup
         docker start ${DEMO_CONTAINER_NAME}
     fi
-    echo "Docker Image ${DEMO_CONTAINER_NAME} ia already up and running!"
+    echo "Docker Image ${DEMO_CONTAINER_NAME} is already running!"
 else
     # run your container
-    docker run -td --name ${DEMO_CONTAINER_NAME} --network ${DOCKER_NETWORK_NAME} --ip ${DEMO_IP} -v ${DOCKER_VOLUME_NAME}:${DOCKER_VOLUME_PATH} -p 8501:8501 ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest
+    docker run -td --name ${DEMO_CONTAINER_NAME} -v ${DOCKER_VOLUME_NAME}:${DOCKER_VOLUME_PATH} --add-host=host.docker.internal:host-gateway -p 8501:8501 ${DEMO_IMAGE}
     #no need this here, works as root
     #docker exec -u 0:0 ${DEMO_CONTAINER_NAME} chown -R oracle:oinstall /tmp/oracle_volume
     echo "DATABASE IS READY TO USE!"
@@ -122,15 +113,14 @@ else
     fi
 fi
 
-if pgrep -x "ollama" > /dev/null
-then
-    echo "Ollama is Running"
+
+if pgrep -x "ollama" > /dev/null; then
+    echo "Ollama is already running"
 else
+    # Run Ollama
     ollama serve &
-    # get llama3.2 and run
-    ollama run llama3.2 &
+    # Get LLaMA3.2 and run
+    ollama run ${LLM} &
 fi
 
-
-
-echo "Everything is ready, open your web browser, copy and paste the link http://localhost:8501"
+echo "Demo Environment is ready, open your web browser, copy and paste the link http://localhost:8501"

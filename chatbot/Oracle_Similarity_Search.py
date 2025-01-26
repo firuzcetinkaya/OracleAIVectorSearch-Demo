@@ -72,8 +72,8 @@ if (selected_vector_store and selected_embedding_model and selected_distance_met
     distance_method=get_selected_distance()
     proxy=""
     embedder_params = {"provider": "database", "model": selected_embedding_model}
-    embedder = OracleEmbeddings(conn=st.session_state.conn_vector_user, params=embedder_params, proxy=proxy)
-    OracleVS = OracleVS(client=st.session_state.conn_vector_user,table_name=selected_vector_store,embedding_function=embedder,distance_strategy=distance_method) 
+    embedder = OracleEmbeddings(conn=st.session_state.conn_demo_user, params=embedder_params, proxy=proxy)
+    OracleVS = OracleVS(client=st.session_state.conn_demo_user,table_name=selected_vector_store,embedding_function=embedder,distance_strategy=distance_method) 
 else:
     st.warning("Select Vector Store, Embedding Model and Distance Strategy")
 query_text = st.text_area(

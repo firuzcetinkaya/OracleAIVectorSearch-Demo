@@ -1,37 +1,11 @@
 import streamlit as st
-import utils.db_connection as db 
-import utils.common_db_operations as db_ops
 from langchain_community.vectorstores import OracleVS
-from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 import pandas as pd
-#defne 5d
-st.write("##### Similarity Search (Semantic Search) ")
+from utils.model_distance_selector import selector_form
 
-def get_selected_distance():
-    if (selected_distance_method):
-        match selected_distance_method:
-            case "COSINE":
-                distance_strategy=DistanceStrategy.COSINE
-                return distance_strategy
-            case "DOT_PRODUCT":
-                distance_strategy=DistanceStrategy.DOT_PRODUCT
-                return distance_strategy
-            case "EUCLIDEAN_DISTANCE":
-                distance_strategy=DistanceStrategy.EUCLIDEAN_DISTANCE
-                return distance_strategy
-            case "JACCARD":
-                distance_strategy=DistanceStrategy.JACCARD
-                return distance_strategy
-            case "MAX_INNER_PRODUCT":
-                distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT
-                return distance_strategy
-            case _:
-                st.warning("Please Select Distance Method")
-                return ""
-    else:
-        st.warning("Please Select Distance Method")
-        return ""
+
+st.write("##### Similarity Search (Semantic Search) ")
 
 # some of them are not implemented and some of them are doing similarity search with embedding
 # 
@@ -42,42 +16,9 @@ def get_selected_distance():
 #'max_marginal_relevance_search']
 
 
-
-vscol, embcol,discol = st.columns(3)
-with vscol:
-    selected_vector_store = st.selectbox(  
-        "Vector Store",
-        db_ops.get_vector_stores_list(),
-        index=None,
-        placeholder="Select Vector Store ...",
-        )
-with embcol:
-    selected_embedding_model = st.selectbox(
-        "Embedding Model",
-        (db_ops.get_embedding_models_list()),
-        index=None,
-        placeholder="Select embedding model...",
-        )
-with discol:
-    selected_distance_method = st.selectbox(
-        "Distance Strategy ",
-        ("COSINE","DOT_PRODUCT","EUCLIDEAN_DISTANCE","JACCARD","MAX_INNER_PRODUCT"),
-        index=None,
-        placeholder="Select distance method...",help="Choose your metric according to your embedding model, For the details of the Distance Metrics https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/vector-distance-metrics.html"
-    )
-if (selected_vector_store and selected_embedding_model and selected_distance_method):
-    distance_method=get_selected_distance()
-    proxy=""
-    embedder_params = {"provider": "database", "model": selected_embedding_model}
-    embedder = OracleEmbeddings(conn=st.session_state.conn_vector_user, params=embedder_params, proxy=proxy)
-    OracleVS = OracleVS(client=st.session_state.conn_vector_user,table_name=selected_vector_store,embedding_function=embedder,distance_strategy=distance_method) 
-else:
-    st.warning("Select Vector Store, Embedding Model and Distance Strategy")
-query_text = st.text_area(
-"Enter your query :",
-"",
-placeholder="query..."
-)
+with st.sidebar:
+   user_input = selector_form()
+   
 
 m1,m2 = st.columns(2,gap='medium')
 with m1:
@@ -93,21 +34,22 @@ with m1:
             help="For the Oracle Split Example visit https://python.langchain.com/v0.2/docs/integrations/document_loaders/oracleai/#split-documents"
         )
 with m2:
-    if (similarity_search_method):
-        match similarity_search_method:
-            case "Similarity Search":
-                st.checkbox("Use filter")
-                k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
-            case "Similarity Search with Relevance Threshold":
-                st.checkbox("Use filter")                
-                k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
-                score_threshold=st.slider("score_threshold", 0.00, 1.00, 0.90,help="Minimum relevance threshold; Only retrieve documents that have a relevance score above a certain threshold")
-            case "Max Marginal Relevance Search":
-                st.checkbox("Use filter")
-                k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
-                fetch_k = st.slider("fetch_k", 1, 100, 20, help="Amount of documents to pass to MMR algorithm; (Default: 20)") 
-                lambda_mult = st.slider("lambda_mult", 0.0, 1.0, 0.5,help="Diversity of results returned by MMR; 1 for minimum diversity and 0 for maximum. (Default: 0.5)")
-                
+    with st.expander("Similarity Search Parameters"): 
+        if (similarity_search_method):
+            match similarity_search_method:
+                case "Similarity Search":
+                    st.checkbox("Use filter")
+                    k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
+                case "Similarity Search with Relevance Threshold":
+                    st.checkbox("Use filter")                
+                    k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
+                    score_threshold=st.slider("score_threshold", 0.00, 1.00, 0.90,help="Minimum relevance threshold; Only retrieve documents that have a relevance score above a certain threshold")
+                case "Max Marginal Relevance Search":
+                    st.checkbox("Use filter")
+                    k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
+                    fetch_k = st.slider("fetch_k", 1, 100, 20, help="Amount of documents to pass to MMR algorithm; (Default: 20)") 
+                    lambda_mult = st.slider("lambda_mult", 0.0, 1.0, 0.5,help="Diversity of results returned by MMR; 1 for minimum diversity and 0 for maximum. (Default: 0.5)")
+                    
 #  Document(metadata={'SOURCE MIME TYPE': 'application/pdf', 'creation date': '9/23/2024 12:44:46 PM', 
 #  'author': 'Microsoft Office User', 'revision date': '9/23/2024 12:44:46 PM', 
 #  'Creator': '\rMicrosoft® Word 2016', 'publisher': 'Microsoft® Word 2016', 
@@ -115,7 +57,18 @@ with m2:
 #  'id': '9', 'document_id': '1', 'document_summary':'...'}, 
 #  page_content='unit from the posts we will share at the end of each theme on social media.')
 
+query_text = st.text_area(
+"Enter your query :",
+"",
+placeholder="query..."
+)
+
 if st.button("Search Vector Store"):
+    proxy=""
+    embedder_params = {"provider": "database", "model": st.session_state.embedding_model}
+    embedder = OracleEmbeddings(conn=st.session_state.conn_demo_user, params=embedder_params, proxy=proxy)
+    OracleVS = OracleVS(client=st.session_state.conn_demo_user,table_name=st.session_state.vector_store,embedding_function=embedder,distance_strategy=st.session_state.distance_metric) 
+
     if (similarity_search_method):
         match similarity_search_method:
             case "Similarity Search":

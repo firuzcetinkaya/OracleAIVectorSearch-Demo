@@ -16,11 +16,11 @@ from langchain_community.document_loaders.oracleai import OracleDocLoader
 supported_languages=["ALBANIAN","AMERICAN","ARABIC","ARMENIAN","AZERBAIJANI","BULGARIAN","CROATIAN","CZECH","DANISH","DUTCH","EGYPTIAN","ENGLISH","ESTONIAN","FINNISH","FRENCH","GEORGIAN","GERMAN","GREEK","HEBREW","HINDI","HUNGARIAN","ICELANDIC","INDONESIAN","IRISH","ITALIAN","JAPANESE","KOREAN","KYRGYZ","LATVIAN","LITHUANIAN","MACEDONIAN","MALAY","NORWEGIAN","PERSIAN","POLISH","PORTUGUESE","PUNJABI","ROMANIAN","RUSSIAN","SIMPLIFIED CHINESE","SLOVAK","SLOVENIAN","SPANISH","SWAHILI","SWEDISH","TAMIL","THAI","TRADITIONAL CHINESE","TURKISH","TURKMEN","UKRAINIAN","URDU","VIETNAMESE"]
 
 def list_existing_embedding_models():
-    if 'conn_vector_user' not in st.session_state:
+    if 'conn_demo_user' not in st.session_state:
         main.getVectorUserConnection() 
-        connection=st.session_state.conn_vector_user
-    elif st.session_state.conn_vector_user.is_healthy():
-        connection=st.session_state.conn_vector_user
+        connection=st.session_state.conn_demo_user
+    elif st.session_state.conn_demo_user.is_healthy():
+        connection=st.session_state.conn_demo_user
         print("Vector User Connection is ok ")
     else:
         st.warning("Please Check Oracle Database 23ai Container!!!")
@@ -49,11 +49,11 @@ def list_existing_embedding_models():
     return embedding_models_list
 
 def list_existing_vector_stores():
-    if 'conn_vector_user' not in st.session_state:
+    if 'conn_demo_user' not in st.session_state:
         main.getVectorUserConnection() 
-        connection=st.session_state.conn_vector_user
-    elif st.session_state.conn_vector_user.is_healthy():
-        connection=st.session_state.conn_vector_user
+        connection=st.session_state.conn_demo_user
+    elif st.session_state.conn_demo_user.is_healthy():
+        connection=st.session_state.conn_demo_user
         print("Vector User Connection is ok ")
     else:
         st.warning("Please Check Oracle Database 23ai Container!!!")
@@ -82,11 +82,11 @@ def list_existing_vector_stores():
     return table_list
 
 def list_existing_tables():
-    if 'conn_vector_user' not in st.session_state:
+    if 'conn_demo_user' not in st.session_state:
         main.getVectorUserConnection() 
-        connection=st.session_state.conn_vector_user
-    elif st.session_state.conn_vector_user.is_healthy():
-        connection=st.session_state.conn_vector_user
+        connection=st.session_state.conn_demo_user
+    elif st.session_state.conn_demo_user.is_healthy():
+        connection=st.session_state.conn_demo_user
         print("Vector User Connection is ok ")
     else:
         st.warning("Please Check Oracle Database 23ai Container!!!")
@@ -114,11 +114,11 @@ def list_existing_tables():
     return table_list
 
 def list_columns_of_table(table_name):
-    if 'conn_vector_user' not in st.session_state:
+    if 'conn_demo_user' not in st.session_state:
         main.getVectorUserConnection() 
-        connection=st.session_state.conn_vector_user
-    elif st.session_state.conn_vector_user.is_healthy():
-        connection=st.session_state.conn_vector_user
+        connection=st.session_state.conn_demo_user
+    elif st.session_state.conn_demo_user.is_healthy():
+        connection=st.session_state.conn_demo_user
         print("Vector User Connection is ok ")
     else:
         st.warning("Please Check Oracle Database 23ai Container!!!")
@@ -186,21 +186,21 @@ def get_selected_vector_store():
         return ""
         
 def create_loader(loader_params):
-    loader = OracleDocLoader(conn=st.session_state.conn_vector_user, params=loader_params)
+    loader = OracleDocLoader(conn=st.session_state.conn_demo_user, params=loader_params)
     return loader
 
 def create_splitter(splitter_params):
-    splitter = OracleTextSplitter(conn=st.session_state.conn_vector_user, params=splitter_params)    
+    splitter = OracleTextSplitter(conn=st.session_state.conn_demo_user, params=splitter_params)    
     return splitter
 
 def create_summary(summary_params):
     proxy=""
-    summary = OracleSummary(conn=st.session_state.conn_vector_user, params=summary_params, proxy=proxy)
+    summary = OracleSummary(conn=st.session_state.conn_demo_user, params=summary_params, proxy=proxy)
     return summary
 
 def create_embedder(embedder_params):
     proxy=""
-    embedder = OracleEmbeddings(conn=st.session_state.conn_vector_user, params=embedder_params, proxy=proxy)
+    embedder = OracleEmbeddings(conn=st.session_state.conn_demo_user, params=embedder_params, proxy=proxy)
     return embedder
 
 def suggestTableName():
@@ -297,7 +297,7 @@ def load_split_embed_docs(loader,splitter,summary,embedder):
         #table_name=suggestTableName()
         table_name="test1"
         distance_strategy=get_selected_distance()
-        vector_store = OracleVS.from_documents(documents=chunks_with_mdata, embedding=embedder, client=st.session_state.conn_vector_user, table_name=table_name, distance_strategy=distance_strategy)
+        vector_store = OracleVS.from_documents(documents=chunks_with_mdata, embedding=embedder, client=st.session_state.conn_demo_user, table_name=table_name, distance_strategy=distance_strategy)
         if vector_store is not None:
             st.write("\n Documents loading, chunking and generating embeddings and summary are complete.\n")
             st.write(f"Total chunks sent to Oracle Vector Store: {len(chunks_with_mdata)}\n")
@@ -306,11 +306,11 @@ def load_split_embed_docs(loader,splitter,summary,embedder):
 
 def create_vector_index(table_name,selected_index_type,index_params):
     if selected_index_type=="IVF":
-        oraclevs.create_index(client=st.session_state.conn_vector_user,vector_store=vector_store, params={
+        oraclevs.create_index(client=st.session_state.conn_demo_user,vector_store=vector_store, params={
                 "idx_name": "ivf"+table_name, "idx_type": "IVF"
             })
     elif selected_index_type=="HNSW":
-        oraclevs.create_index(client=st.session_state.conn_vector_user,vector_store=vector_store, params={
+        oraclevs.create_index(client=st.session_state.conn_demo_user,vector_store=vector_store, params={
                 "idx_name": "hnsw"+table_name, "idx_type": "HNSW"
             })
     else:
@@ -473,7 +473,7 @@ with tab1:
                     st.write("select a column")
                 else:                    
                     loader_params = {
-                        "owner": "VECTOR_USER",
+                        "owner": "demo_user",
                         "tablename": selected_table_name,
                         "colname": selected_column_name,
                     }
@@ -540,7 +540,7 @@ with tab2:
                     create_vector_index()
             elif selected_index_type == "Hybrid":
                 index_params_params = {
-                    "owner": "VECTOR_USER",
+                    "owner": "demo_user",
                     "tablename": "demo_tab",
                     "colname": "data",
                 }

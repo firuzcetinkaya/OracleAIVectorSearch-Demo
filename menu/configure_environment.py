@@ -4,25 +4,19 @@ import utils.env_file as env
 import utils.common_db_operations as db_ops
 import utils.db_connection as db 
 
-
-
 # Functions
 
 def save_configuration_changes():
     st.session_state.username=USERNAME
     st.session_state.password=PASSWORD
+    st.session_state.demo_username=DEMO_USERNAME
+    st.session_state.demo_password=DEMO_PASSWORD
     st.session_state.host=HOST
     st.session_state.port=PORT
-    st.session_state.dsn=dsn
     st.session_state.service_name=SERVICE_NAME
-    st.session_state.documents_directory=DOCUMENTS_DIRECTORY
+    st.session_state.db_expose_port=DB_EXPOSE_PORT
     st.session_state.onnx_directory=ONNX_DIRECTORY
     st.session_state.llm=LLM
-    st.session_state.container_name=CONTAINER_NAME
-    st.session_state.oracle_passwd=ORACLE_PASSWD
-    st.session_state.db_host_name=DB_HOST_NAME
-    st.session_state.db_port=DB_PORT
-    st.session_state.db_expose_port=DB_EXPOSE_PORT
     env.write_env_file()
 
 def configure_db():
@@ -30,7 +24,7 @@ def configure_db():
         print("Sys Connection is ok ")
         st.write("Vector-db is up & running")
         st.write("Starting Config")
-        if db_ops.configure_vector_user():
+        if db_ops.configure_demo_user():
             st.write("DB Config is complete")
             st.info("DB is ready to be used")
     else:
@@ -71,41 +65,20 @@ env.read_env_file()
 #Start of the page
 
 # Configuration Top Menu
-tab1, tab2, tab3 = st.tabs(["Configuration Parameters","Configure Oracle23ai Database", "Configure LLM"])
+tab1, tab2 = st.tabs(["Database Settings", "LLM Settings"])
 with tab1: 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        col1 .caption("## DB Container")
-        CONTAINER_NAME=st.text_input("Container_Name",st.session_state.container_name)
-        ORACLE_PASSWD=st.text_input("Oracle_Passwd",st.session_state.oracle_passwd)
-        DB_HOST_NAME=st.text_input("DB_Host_Name",st.session_state.db_host_name)
-        DB_PORT=st.text_input("DB_Port",st.session_state.db_port)
-        DB_EXPOSE_PORT=st.text_input("DB_Expose_Port",st.session_state.db_expose_port)
-    with col2:
-        col2.caption("## DB Connection")
-        USERNAME=st.text_input("Username",st.session_state.username)
-        PASSWORD=st.text_input("Password",st.session_state.password)
-        HOST=st.text_input("Host",st.session_state.host)
-        PORT=st.text_input("Port",st.session_state.port)
-        dsn=st.text_input("dsn",st.session_state.dsn)
-        SERVICE_NAME=st.text_input("Service_Name",st.session_state.service_name)
-        ONNX_DIRECTORY=st.text_input("ONNX_Directory Path on File System",st.session_state.onnx_directory)
-    with col3:    
-        col3.caption("## Other Settings")
-        DOCUMENTS_DIRECTORY=st.text_input("Documents_Directory",st.session_state.documents_directory)
-        LLM=st.text_input("LLM",st.session_state.llm)    
+    USERNAME=st.text_input("Username",st.session_state.username)
+    PASSWORD=st.text_input("Password",st.session_state.password)
+    DEMO_USERNAME=st.text_input("Demo Username",st.session_state.demo_username)
+    DEMO_PASSWORD=st.text_input("Demo Password",st.session_state.demo_password)
+    HOST=st.text_input("Host",st.session_state.host)
+    PORT=st.text_input("Port",st.session_state.port)
+    SERVICE_NAME=st.text_input("Service Name",st.session_state.service_name)
+    DB_EXPOSE_PORT=st.text_input("DB Expose Port",st.session_state.db_expose_port)
     if st.button("Save Configuration Changes","Config_Save"):
         save_configuration_changes()  
 with tab2:
-    st.markdown("""
-            By Configuring Oracle23ai Database, you are going to create the followings, 
-            - Oracle23ai Database User :gray-background[Vector_User], which is going to be used in all Vector and RAG operations, \n
-            - :gray-background[DEMO_PY_DIR] object is an Oracle Directory object which will be used in external Onnx Model import operations, \n
-            and grant required priviliges to Vector_User \n            
-    """)
-    if st.button("Configure Oracle23ai Database ","DB_Initialization"):
-        configure_db()
-with tab3:
+    LLM=""
     if (st.session_state.host=="host.docker.internal"):
         ollama = ollama.Client("host.docker.internal")
     elif (st.session_state.host=="localhost"):

@@ -10,7 +10,7 @@ class ModelLoader:
     A class that implements three different methods for loading an external embedding model to Oracle Database.
     """
     def __init__(self):
-        self.db_connection = db.get_vector_user_connection()
+        self.db_connection = db.get_demo_user_connection()
         self.onnx_dir = "DEMO_PY_DIR"
         self.db_model_name=""
 

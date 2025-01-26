@@ -7,38 +7,13 @@ from langchain_community.vectorstores import OracleVS
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.prompts import ChatPromptTemplate
-import utils.common_db_operations as db_ops
-
+from utils.model_distance_selector import selector_form
 
 
 # read enviroment from  .env
 config = configparser.ConfigParser()
 config.read(".env")
 
-def get_selected_distance():
-    if (selected_distance_method):
-        match selected_distance_method:
-            case "COSINE":
-                distance_strategy=DistanceStrategy.COSINE
-                return distance_strategy
-            case "DOT_PRODUCT":
-                distance_strategy=DistanceStrategy.DOT_PRODUCT
-                return distance_strategy
-            case "EUCLIDEAN_DISTANCE":
-                distance_strategy=DistanceStrategy.EUCLIDEAN_DISTANCE
-                return distance_strategy
-            case "JACCARD":
-                distance_strategy=DistanceStrategy.JACCARD
-                return distance_strategy
-            case "MAX_INNER_PRODUCT":
-                distance_strategy=DistanceStrategy.MAX_INNER_PRODUCT
-                return distance_strategy
-            case _:
-                st.write("Choose distance method")
-                return ""  
-    else:
-        st.warning("Please Select Distance Method")
-        return ""
 
 def rag_search (question):
     PROMPT_TEMPLATE = """
@@ -51,17 +26,12 @@ def rag_search (question):
      Answer the question based on the above context in markdown format: {question}
      """ 
     # ############################
-    if (selected_vector_store and selected_embedding_model and selected_distance_method):
-        distance_method=get_selected_distance()
-        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-        connection = st.session_state.conn_vector_user
-        proxy=""
-        embedder_params = {"provider": "database", "model": selected_embedding_model}
-        embedder = OracleEmbeddings(conn=st.session_state.conn_vector_user, params=embedder_params, proxy=proxy)
-        ovs = OracleVS(client=connection, embedding_function=embedder, table_name=selected_vector_store, distance_strategy=distance_method)
-    else:
-        st.warning("Select Vector Store, Embedding Model and Distance Strategy")
-        st.stop()
+    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+    connection = st.session_state.conn_demo_user
+    proxy=""
+    embedder_params = {"provider": "database", "model": st.session_state.embedding_model}
+    embedder = OracleEmbeddings(conn=st.session_state.conn_demo_user, params=embedder_params, proxy=proxy)
+    ovs = OracleVS(client=connection, embedding_function=embedder, table_name=st.session_state.vector_store, distance_strategy=st.session_state.distance_metric)
     # Retriever
     retriever = ovs.as_retriever(search_kwargs={"k": 5})
     # Retrieve relevant documents
@@ -77,8 +47,8 @@ def rag_search (question):
 
 def generate_text_with_ollama(input_sentence, chat_history,llm_model):
     #if ollama is in a separate docker or in docker host
-    if (st.session_state['is_docker']=="True"):    
-        olc = ollama.Client().Client("http://host.docker.internal:11434")
+    if (st.session_state.is_docker == "True"):    
+        olc = ollama.Client("http://host.docker.internal:11434")
         stream = olc.chat(
         model=llm_model,
         messages=[{'role': 'user', 'content': input_sentence}],
@@ -99,33 +69,12 @@ with st.sidebar:
     if Oracle_RAG:
         Top_key = st.number_input('Top Closest Documents    ',value=4)
         st.write('Number of Document from Database : ', str(Top_key))
-        st.write("")
-        selected_embedding_model = st.selectbox(
-            "Embedding Model",
-            (db_ops.get_embedding_models_list()),
-            index=None,
-            placeholder="Select embedding model...",
-        )
-        st.write("")
-        st.write("")
-        selected_distance_method = st.selectbox(
-            "Distance Strategy ",
-            ("COSINE","DOT_PRODUCT","EUCLIDEAN_DISTANCE","JACCARD","MAX_INNER_PRODUCT"),
-            index=None,
-            placeholder="Select distance method...",help="Choose your metric according to your embedding model, For the details of the Distance Metrics https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/vector-distance-metrics.html"
-        )
-        st.write("")
-        st.write("")
-        selected_vector_store = st.selectbox(
-            "Vector Stores",
-            (db_ops.get_vector_stores_list()),
-            index=None,
-            placeholder="Select vector store...",
-        )
+        with st.sidebar:
+            user_input = selector_form()
 
     
 if Oracle_RAG:
-    st.markdown("##### LLM Chatbot using RAG with Oracle 23ai Database")
+    st.markdown("##### LLM Chatbot using RAG with Oracle 23ai")
 else :
     st.markdown("##### LLM Chatbot using Ollama")
 
