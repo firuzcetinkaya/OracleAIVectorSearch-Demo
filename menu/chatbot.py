@@ -2,12 +2,11 @@ import streamlit as st
 import configparser
 import json
 import ollama 
-from langchain_community.vectorstores.utils import DistanceStrategy
 from langchain_community.vectorstores import OracleVS
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.prompts import ChatPromptTemplate
-from utils.model_distance_selector import selector_form
+import utils.model_distance_selector as model_distance_selector
 
 
 # read enviroment from  .env
@@ -64,13 +63,19 @@ def generate_text_with_ollama(input_sentence, chat_history,llm_model):
         yield chunk['message']['content']
 
 
+@st.dialog("Chatbot Preferences",width="large")
+def show_preferences_dialog():
+    model_distance_selector.selector_form()
+    Top_key = st.number_input('Top Closest Documents    ',value=4)
+    st.write('Number of Documents from Database : ', str(Top_key))
+    if st.button("Save"): 
+        st.rerun()  
+
 with st.sidebar:
     Oracle_RAG = st.checkbox('Enable RAG Using Oracle 23ai Database')
     if Oracle_RAG:
-        Top_key = st.number_input('Top Closest Documents    ',value=4)
-        st.write('Number of Document from Database : ', str(Top_key))
-        with st.sidebar:
-            user_input = selector_form()
+        if st.button("Show Preferences"):
+            show_preferences_dialog()
 
     
 if Oracle_RAG:

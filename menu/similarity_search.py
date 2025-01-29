@@ -2,60 +2,87 @@ import streamlit as st
 from langchain_community.vectorstores import OracleVS
 from langchain_community.embeddings.oracleai import OracleEmbeddings
 import pandas as pd
-from utils.model_distance_selector import selector_form
-
+import utils.model_distance_selector as model_distance_selector
+import similarity_search.search as search
 
 st.write("##### Similarity Search (Semantic Search) ")
 
-# some of them are not implemented and some of them are doing similarity search with embedding
-# 
-#all_similarity_search_methods=['search','similarity_search','similarity_search_with_score','similarity_search_with_relevance_scores',
-#'similarity_search_by_vector','similarity_search_by_vector_with_relevance_scores','similarity_search_by_vector_returning_embeddings',    
-#'max_marginal_relevance_search','max_marginal_relevance_search_by_vector','max_marginal_relevance_search_with_score_by_vector']
-#similarity_search_methods=['search','similarity_search','similarity_search_with_score','similarity_search_with_relevance_scores',   
-#'max_marginal_relevance_search']
+
+def run_search():
+    proxy=""
+    embedder_params = {"provider": "database", "model": st.session_state.embedding_model}
+    embedder = OracleEmbeddings(conn=st.session_state.conn_demo_user, params=embedder_params, proxy=proxy)
+    vec_store = OracleVS(client=st.session_state.conn_demo_user,table_name=st.session_state.vector_store,embedding_function=embedder,distance_strategy=st.session_state.distance_metric) 
+    print("ss1")
+    if st.session_state.search_method=="Similarity Search":
+        print("ss2")
+        #search_kwargs={'filter': {'paper_title':'GPT-4 Technical Report'}}
+        search_kwargs={'k': st.session_state.k} 
+        if st.session_state.use_filter=="True":
+            print("ss3")
+            document_list=vec_store.similarity_search(query_text,filter=st.session_state.filter_criteria,search_kwargs=search_kwargs)
+        else:
+            print("ss4")
+            document_list=vec_store.similarity_search(query_text, search_kwargs=search_kwargs)
+        print(document_list)
+        print("ss5")
+    elif st.session_state.search_method=="Search with Relevance Threshold":
+        search_kwargs={'k': st.session_state.k,'score_threshold': st.session_state.score_threshold} 
+        if (st.session_state.use_filter=="True"):
+            document_list=vec_store.similarity_search_with_score(query_text,filter=st.session_state.filter_criteria, search_kwargs=search_kwargs)
+        else:
+            document_list=vec_store.similarity_search_with_score(query_text, search_kwargs=search_kwargs)
+    elif st.session_state.search_method=="MMR Search":
+        search_kwargs={'k': st.session_state.k,'fetch_k': st.session_state.fetch_k,'lambda_mult':st.session_state.lambda_mult} 
+        if (st.session_state.use_filter=="True"):
+            document_list=vec_store.max_marginal_relevance_search(query_text,filter=st.session_state.filter_criteria,search_kwargs=search_kwargs)
+        else:
+            document_list=vec_store.max_marginal_relevance_search(query_text, search_kwargs=search_kwargs)
+    else:
+        st.warning("Select Search Method")       
+        st.stop()
+
+    #  Returned document structure, if with score
+    #    
+    #  Document(metadata={'SOURCE MIME TYPE': 'application/pdf', 'creation date': '9/23/2024 12:44:46 PM', 
+    #  'author': 'Microsoft Office User', 'revision date': '9/23/2024 12:44:46 PM', 
+    #  'Creator': '\rMicrosoft® Word 2016', 'publisher': 'Microsoft® Word 2016', 
+    #  '_oid': '674db350ff14cdb19fa16b5acc350db1', '_file': './Data/docs/test.pdf', 
+    #  'id': '9', 'document_id': '1', 'document_summary':'...'}, 
+    #  page_content='unit from the posts we will share at the end of each theme on social media.'),0.455522
+    print("ss6")
+    if st.session_state.search_method=="Search with Relevance Threshold":
+        cols = ['Score','Chunk Id','Doc Id','File Name','Content','Doc Summary']
+        rows = []
+        for d,s in document_list: 
+            row = [s,d.metadata['id'],d.metadata['document_id'],d.metadata['_file'],d.page_content,d.metadata['document_summary']]
+            rows.append(row)
+        docs = pd.DataFrame(rows, columns = cols)
+        st.dataframe(docs)
+    else:
+        print("ss7")
+        cols = ['Chunk Id','Doc Id','File Name','Content','Doc Summary']
+        rows = []
+        for d in document_list: 
+            row = [d.metadata['id'],d.metadata['document_id'],d.metadata['_file'],d.page_content,d.metadata['document_summary']]
+            rows.append(row)
+        docs = pd.DataFrame(rows, columns = cols)
+        st.dataframe(docs)
+        print(docs)
+        print("ss8")
+
+@st.dialog("Search Preferences",width="large")
+def show_search_dialog():
+    model_distance_selector.selector_form()
+    if st.checkbox("Show Search Parameters"):
+        search.search_params_form()
+    if st.button("OK"):
+        st.session_state['run_searching_process']='True'  
+        st.rerun()  
 
 
-with st.sidebar:
-   user_input = selector_form()
-   
 
-m1,m2 = st.columns(2,gap='medium')
-with m1:
-    #similarity_search_method = st.pills("Select Similarity Search Method", similarity_search_methods, selection_mode="single")
-    similarity_search_method = st.radio(
-            "Similarity Search Method",
-            ['Similarity Search','Similarity Search with Relevance Threshold','Max Marginal Relevance Search'],
-            captions=[
-                "Returns most similar docs.",
-                "Returns most similar docs with relevance scores",
-                "Returns most similar docs by maximal marginal relevance.",
-            ],horizontal=True,index=0,
-            help="For the Oracle Split Example visit https://python.langchain.com/v0.2/docs/integrations/document_loaders/oracleai/#split-documents"
-        )
-with m2:
-    with st.expander("Similarity Search Parameters"): 
-        if (similarity_search_method):
-            match similarity_search_method:
-                case "Similarity Search":
-                    st.checkbox("Use filter")
-                    k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
-                case "Similarity Search with Relevance Threshold":
-                    st.checkbox("Use filter")                
-                    k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
-                    score_threshold=st.slider("score_threshold", 0.00, 1.00, 0.90,help="Minimum relevance threshold; Only retrieve documents that have a relevance score above a certain threshold")
-                case "Max Marginal Relevance Search":
-                    st.checkbox("Use filter")
-                    k = st.slider("k", 1, 10, 4,help="Amount of documents to return (Default: 4)") 
-                    fetch_k = st.slider("fetch_k", 1, 100, 20, help="Amount of documents to pass to MMR algorithm; (Default: 20)") 
-                    lambda_mult = st.slider("lambda_mult", 0.0, 1.0, 0.5,help="Diversity of results returned by MMR; 1 for minimum diversity and 0 for maximum. (Default: 0.5)")
-                    
-#  Document(metadata={'SOURCE MIME TYPE': 'application/pdf', 'creation date': '9/23/2024 12:44:46 PM', 
-#  'author': 'Microsoft Office User', 'revision date': '9/23/2024 12:44:46 PM', 
-#  'Creator': '\rMicrosoft® Word 2016', 'publisher': 'Microsoft® Word 2016', 
-#  '_oid': '674db350ff14cdb19fa16b5acc350db1', '_file': './Data/6 Yas 2. Unite Veli Mektubu.pdf', 
-#  'id': '9', 'document_id': '1', 'document_summary':'...'}, 
-#  page_content='unit from the posts we will share at the end of each theme on social media.')
+search.search_main_form()
 
 query_text = st.text_area(
 "Enter your query :",
@@ -63,50 +90,21 @@ query_text = st.text_area(
 placeholder="query..."
 )
 
-if st.button("Search Vector Store"):
-    proxy=""
-    embedder_params = {"provider": "database", "model": st.session_state.embedding_model}
-    embedder = OracleEmbeddings(conn=st.session_state.conn_demo_user, params=embedder_params, proxy=proxy)
-    OracleVS = OracleVS(client=st.session_state.conn_demo_user,table_name=st.session_state.vector_store,embedding_function=embedder,distance_strategy=st.session_state.distance_metric) 
+  
+if st.button("Search"):
+    print("s1")
+    if 'run_searching_process' not in st.session_state:
+        print("s2")
+        st.session_state['run_searching_process']='False'
+    print("s3")
 
-    if (similarity_search_method):
-        match similarity_search_method:
-            case "Similarity Search":
-                #search_kwargs={'filter': {'paper_title':'GPT-4 Technical Report'}}
-                search_kwargs={'k': k} 
-                retriever = OracleVS.as_retriever(search_kwargs=search_kwargs)
-                document_list=retriever.invoke(input=query_text,search_kwargs=search_kwargs)
-                cols = ['Chunk Id','Doc Id','File Name','Content','Doc Summary']
-                rows = []
-                for d in document_list: 
-                    row = [d.metadata['id'],d.metadata['document_id'],d.metadata['_file'],d.page_content,d.metadata['document_summary']]
-                    rows.append(row)
-                docs = pd.DataFrame(rows, columns = cols)
-                st.dataframe(docs)
-            case "Similarity Search with Relevance Threshold":
-                search_type='similarity_score_threshold'
-                search_kwargs={'k': k,'score_threshold': score_threshold} 
-                retriever = OracleVS.as_retriever(search_type=search_type,search_kwargs=search_kwargs)
-                document_list=retriever.invoke(input=query_text,search_kwargs=search_kwargs)
-                cols = ['Chunk Id','Doc Id','File Name','Content','Doc Summary']
-                rows = []
-                for d in document_list: 
-                    row = [d.metadata['id'],d.metadata['document_id'],d.metadata['_file'],d.page_content,d.metadata['document_summary']]
-                    rows.append(row)
-                docs = pd.DataFrame(rows, columns = cols)
-                st.dataframe(docs)
-            case "max_marginal_relevance_search":
-                search_type='mmr'
-                search_kwargs={'k': k,'fetch_k': fetch_k,'lambda_mult':lambda_mult} 
-                retriever = OracleVS.as_retriever(search_type=search_type,search_kwargs=search_kwargs)
-                document_list=retriever.invoke(input=query_text,search_kwargs=search_kwargs)
-                cols = ['Chunk Id','Doc Id','File Name','Content','Doc Summary']
-                rows = []
-                for d in document_list: 
-                    row = [d.metadata['id'],d.metadata['document_id'],d.metadata['_file'],d.page_content,d.metadata['document_summary']]
-                    rows.append(row)
-                docs = pd.DataFrame(rows, columns = cols)
-                st.dataframe(docs)
-    else:
-        st.warning("Please Select Similarity Search Method")
-        st.stop()
+    show_search_dialog()
+    print("s4")
+
+    if (st.session_state.run_searching_process=='True'): 
+        print("s5")
+        st.session_state['run_searching_process']='False'
+        print("s6")
+        run_search()
+        print("s7")
+       

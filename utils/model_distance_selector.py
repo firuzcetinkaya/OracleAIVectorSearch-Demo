@@ -52,29 +52,33 @@ def selector_form():
     def set_vector_store():
         st.session_state['vector_store'] = get_selected_vector_store() 
 
-    selected_embedding_model = st.selectbox(
+    c1,c2,c3 = st.columns(3)
+    with c1:
+        selected_embedding_model = st.selectbox(
         label="Embedding Model",
         options=db_ops.get_embedding_models_list(),
         index=0,
         on_change=set_embedding_model,
         placeholder="Select an Embedding Model...",
     )
-    selected_distance_method = st.selectbox(
-        label="Distance Strategy ",
-        options=("COSINE","DOT_PRODUCT","EUCLIDEAN_DISTANCE","JACCARD","MAX_INNER_PRODUCT"),
-        index=0,
-        on_change=set_distance_metric,
-        placeholder="Select a Distance Metric...",
-        help="Choose your metric according to your embedding model, For the details of the Distance Metrics https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/vector-distance-metrics.html"
-    )
-    selected_vector_store = st.selectbox(
-        label="Vector Store",
-        options=db_ops.get_vector_stores_list(),
-        index=0,
-        on_change=set_vector_store,
-        placeholder="Select a Vector Store...",
-    )
-
+    with c2:
+        selected_distance_method = st.selectbox(
+            label="Distance Strategy ",
+            options=("COSINE","DOT_PRODUCT","EUCLIDEAN_DISTANCE","JACCARD","MAX_INNER_PRODUCT"),
+            index=0,
+            on_change=set_distance_metric,
+            placeholder="Select a Distance Metric...",
+            help="Choose your metric according to your embedding model, For the details of the Distance Metrics https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/vector-distance-metrics.html"
+        )
+    with c3:
+        selected_vector_store = st.selectbox(
+            label="Vector Store",
+            options=db_ops.get_vector_stores_list(),
+            index=0,
+            on_change=set_vector_store,
+            placeholder="Select a Vector Store...",
+        )
+    
     set_embedding_model()
     set_distance_metric()
     set_vector_store()

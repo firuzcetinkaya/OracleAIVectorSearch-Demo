@@ -11,11 +11,15 @@ def check_runnning_env():
         cgroup = Path('/proc/self/cgroup')
         return Path('/.dockerenv').is_file() or cgroup.is_file() and 'docker' in cgroup.read_text()
     if is_docker():
-        st.session_state['is_docker'] = "True"
+        if 'is_docker' not in st.session_state:
+            st.session_state['is_docker'] = 'True'
+        st.session_state['is_docker'] = 'True'
     else:
-        st.session_state['is_docker'] = "False"
+        if 'is_docker' not in st.session_state:
+            st.session_state['is_docker'] = 'False'
+        st.session_state['is_docker'] = 'False'
 
-    check_runnning_env()
+check_runnning_env()
 
 try:
     pages = {

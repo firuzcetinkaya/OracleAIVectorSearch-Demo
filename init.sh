@@ -92,7 +92,7 @@ else
     docker run -td --name ${DEMO_CONTAINER_NAME} -v ${DOCKER_VOLUME_NAME}:${DOCKER_VOLUME_PATH} --add-host=host.docker.internal:host-gateway -p 8501:8501 ${DEMO_IMAGE}
     #no need this here, works as root
     #docker exec -u 0:0 ${DEMO_CONTAINER_NAME} chown -R oracle:oinstall /tmp/oracle_volume
-    echo "DATABASE IS READY TO USE!"
+    echo "DEMO IMAGE IS READY TO USE!"
 fi
 
 

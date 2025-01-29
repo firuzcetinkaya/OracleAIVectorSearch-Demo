@@ -59,7 +59,7 @@ def get_vector_stores_list():
     db.get_demo_user_connection()
     connection=st.session_state.conn_demo_user
     #query to find the vector embedding models that currently exists in DB
-    sql1 = "SELECT distinct table_name FROM user_tab_columns where data_type=:dtype"
+    sql1 = "SELECT distinct table_name FROM user_tab_columns where data_type=:dtype and table_name not like 'VECTOR$IVF%' and table_name not like 'VECTOR$HNSW%' "
     r_count=0
     cursor = connection.cursor()
     try:
