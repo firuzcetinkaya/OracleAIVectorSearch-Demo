@@ -110,7 +110,7 @@ def show_embedding_dialog():
 
 @st.dialog("Index Preferences",width="large")
 def show_index_dialog():
-    index_name=st.text_input("New Index Name","IND_"+st.session_state.index_type+"_"+st.session_state.vector_store+"_"+st.session_state.distance_metric,placeholder="Please enter index name")
+    index_name=st.text_input("New Index Name","IND_"+st.session_state.index_type+"_"+st.session_state.vector_store+"_",placeholder="Please enter index name")
     st.session_state["new_vector_index_name"]=index_name
     model_distance_selector.selector_form()
     if st.checkbox("Show Index Parameters"):

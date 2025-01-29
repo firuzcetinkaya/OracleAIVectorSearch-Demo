@@ -13,19 +13,13 @@ def run_search():
     embedder_params = {"provider": "database", "model": st.session_state.embedding_model}
     embedder = OracleEmbeddings(conn=st.session_state.conn_demo_user, params=embedder_params, proxy=proxy)
     vec_store = OracleVS(client=st.session_state.conn_demo_user,table_name=st.session_state.vector_store,embedding_function=embedder,distance_strategy=st.session_state.distance_metric) 
-    print("ss1")
     if st.session_state.search_method=="Similarity Search":
-        print("ss2")
         #search_kwargs={'filter': {'paper_title':'GPT-4 Technical Report'}}
         search_kwargs={'k': st.session_state.k} 
         if st.session_state.use_filter=="True":
-            print("ss3")
             document_list=vec_store.similarity_search(query_text,filter=st.session_state.filter_criteria,search_kwargs=search_kwargs)
         else:
-            print("ss4")
             document_list=vec_store.similarity_search(query_text, search_kwargs=search_kwargs)
-        print(document_list)
-        print("ss5")
     elif st.session_state.search_method=="Search with Relevance Threshold":
         search_kwargs={'k': st.session_state.k,'score_threshold': st.session_state.score_threshold} 
         if (st.session_state.use_filter=="True"):
@@ -50,7 +44,6 @@ def run_search():
     #  '_oid': '674db350ff14cdb19fa16b5acc350db1', '_file': './Data/docs/test.pdf', 
     #  'id': '9', 'document_id': '1', 'document_summary':'...'}, 
     #  page_content='unit from the posts we will share at the end of each theme on social media.'),0.455522
-    print("ss6")
     if st.session_state.search_method=="Search with Relevance Threshold":
         cols = ['Score','Chunk Id','Doc Id','File Name','Content','Doc Summary']
         rows = []
@@ -60,7 +53,6 @@ def run_search():
         docs = pd.DataFrame(rows, columns = cols)
         st.dataframe(docs)
     else:
-        print("ss7")
         cols = ['Chunk Id','Doc Id','File Name','Content','Doc Summary']
         rows = []
         for d in document_list: 
@@ -68,15 +60,15 @@ def run_search():
             rows.append(row)
         docs = pd.DataFrame(rows, columns = cols)
         st.dataframe(docs)
-        print(docs)
-        print("ss8")
 
 @st.dialog("Search Preferences",width="large")
 def show_search_dialog():
     model_distance_selector.selector_form()
-    if st.checkbox("Show Search Parameters"):
+    params=st.checkbox("Show Search Parameters")
+    if params:
         search.search_params_form()
-    if st.button("OK"):
+    ok = st.button("OK")
+    if ok:
         st.session_state['run_searching_process']='True'  
         st.rerun()  
 
@@ -92,19 +84,11 @@ placeholder="query..."
 
   
 if st.button("Search"):
-    print("s1")
-    if 'run_searching_process' not in st.session_state:
-        print("s2")
-        st.session_state['run_searching_process']='False'
-    print("s3")
-
     show_search_dialog()
-    print("s4")
-
-    if (st.session_state.run_searching_process=='True'): 
-        print("s5")
+    
+if 'run_searching_process' not in st.session_state:
         st.session_state['run_searching_process']='False'
-        print("s6")
-        run_search()
-        print("s7")
-       
+        
+if (st.session_state.run_searching_process=='True'): 
+    st.session_state['run_searching_process']='False'
+    run_search()       

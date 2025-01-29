@@ -3,22 +3,23 @@ import streamlit as st
 def search_main_form():
     #default values
     if 'search_method' not in st.session_state:
-        st.session_state['search_method']="Similarity Search"
+        st.session_state['search_method']='Similarity Search'
     if 'use_filter' not in st.session_state:
         st.session_state['use_filter']='False'
     if 'filter_criteria' not in st.session_state:
         st.session_state['filter_criteria'] = {}    
     if 'k' not in st.session_state:
-        st.session_state['k'] = "4"
+        st.session_state['k'] = '4'
     if 'score_threshold' not in st.session_state:
-        st.session_state['score_threshold'] = "0.90"    
+        st.session_state['score_threshold'] = '0.90'    
     if 'fetch_k' not in st.session_state:
-        st.session_state['fetch_k'] = "20" 
+        st.session_state['fetch_k'] = '20'
     if 'lambda_mult' not in st.session_state:
-        st.session_state['lambda_mult'] = "0.5" 
+        st.session_state['lambda_mult'] = '0.5' 
 
     def set_search_method():
-        st.session_state['search_method'] = search_method    
+        st.session_state['search_method'] = st.session_state.number_inpt_choice
+        #st.session_state['search_method'] = search_method
     
     search_method = st.radio(
             "Similarity Search Method",
@@ -31,6 +32,7 @@ def search_main_form():
             horizontal=False,
             index=0,
             on_change=set_search_method,
+            key="number_inpt_choice",
             help=""
         )
 
