@@ -23,6 +23,8 @@ def read_env_file():
         st.session_state['service_name'] = config.get('DATABASE','SERVICE_NAME')
     if 'db_expose_port' not in st.session_state:
         st.session_state['db_expose_port'] = config.get('DATABASE','DB_EXPOSE_PORT')
+    if 'llm' not in st.session_state:
+        st.session_state['llm'] = config.get('LLM','LLM')
 
 def write_env_file():
     path = os.getcwd()
@@ -37,6 +39,7 @@ def write_env_file():
     config.set('DATABASE','PORT',st.session_state.port)
     config.set('DATABASE','SERVICE_NAME',st.session_state.service_name)
     config.set('DATABASE','DB_EXPOSE_PORT',st.session_state.db_expose_port)
+    config.set('LLM','LLM',st.session_state.llm)
     with open(config_path, 'w') as configfile:    # save
         config.write(configfile)
     config.read(config_path)

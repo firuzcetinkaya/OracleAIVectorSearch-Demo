@@ -76,6 +76,8 @@ with st.sidebar:
     if Oracle_RAG:
         if st.button("Show Preferences"):
             show_preferences_dialog()
+        if 'embedding_model' not in st.session_state:
+            show_preferences_dialog()
 
     
 if Oracle_RAG:
