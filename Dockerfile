@@ -21,8 +21,8 @@ ENTRYPOINT ["streamlit", "run", "/app/app.py", "--server.port=8501", "--server.a
 
 #access token for ghcr
 #username firuzcetinkaya
-#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
 
 #docker login --username firuzcetinkaya --password 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 ghcr.io
+#echo "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"|docker login -u firuzcetinkaya --password-stdin ghcr.io
 #docker build . -t ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest
 #docker push ghcr.io/firuzcetinkaya/oracle-ai-vector-search-demo:latest

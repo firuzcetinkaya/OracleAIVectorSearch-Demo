@@ -90,8 +90,6 @@ if [ "$(docker ps -a -q -f name=${DEMO_CONTAINER_NAME})" ]; then
 else
     # run your container
     docker run -td --name ${DEMO_CONTAINER_NAME} -v ${DOCKER_VOLUME_NAME}:${DOCKER_VOLUME_PATH} --add-host=host.docker.internal:host-gateway -p 8501:8501 ${DEMO_IMAGE}
-    #no need this here, works as root
-    #docker exec -u 0:0 ${DEMO_CONTAINER_NAME} chown -R oracle:oinstall /tmp/oracle_volume
     echo "DEMO IMAGE IS READY TO USE!"
 fi
 
@@ -124,3 +122,6 @@ else
 fi
 
 echo "Demo Environment is ready, open your web browser, copy and paste the link http://localhost:8501"
+
+
+#https://www.gpu-mart.com/blog/install-ollama-and-run-it-on-public-ip

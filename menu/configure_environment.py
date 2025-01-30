@@ -15,17 +15,22 @@ def save_configuration_changes():
     st.session_state.db_expose_port=DB_EXPOSE_PORT
     env.write_env_file()
 
-def configure_llm(ollama):
+def configure_llm():
+    if (st.session_state.is_docker=="True"):
+        olm = ollama.Client("host.docker.internal")   
+    else:
+        olm = ollama.Client("localhost")
+
     try:         
         #st.write('Ollama is currently running currently')    
-        running_LLM_list=[model["name"] for model in ollama.ps()["models"]]
+        running_LLM_list=[model["name"] for model in olm.ps()["models"]]
         #ollama is running with the models
         #ollama is up but no model is running 
         if len(running_LLM_list)>0:
             st.write('Ollama is up, Currently running the model '+running_LLM_list[0])
         else:
             st.write('Ollama is up, But currently no LLM model is running')
-        OLLAMA_MODELS = ollama.list()["models"]
+        OLLAMA_MODELS = olm.list()["models"]
         #embedding_models_list=[row[0] for row in rows]
         local_LLM_list=[model["name"] for model in OLLAMA_MODELS]
         #st.write(local_LLM_list)
@@ -37,8 +42,9 @@ def configure_llm(ollama):
             placeholder="Select LLM ...",
         )
         if st.button("Start the LLM using Ollama","LLM_run"):
-            ollama.pull(selected_LLM_model)
+            olm.pull(selected_LLM_model)
             st.write("Running Ollama with "+selected_LLM_model)
+            st.session_state['llm']=selected_LLM_model
         st.write("To load a new LLM please execute `ollama pull [MODEL_NAME]` from command line")             
     except Exception as e:
         st.warning("Exception Occured. See the details below and please make sure Ollama is installed and running.")
@@ -62,10 +68,5 @@ with tab1:
     if st.button("Save Configuration Changes","Config_Save"):
         save_configuration_changes()  
 with tab2:
-    LLM=""
-    if (st.session_state.is_docker=="True"):
-        ollama = ollama.Client("host.docker.internal")
-    else:
-        ollama = ollama.Client("localhost")
-    configure_llm(ollama)          
+    configure_llm()          
 st.stop()
